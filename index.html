@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Daily Side Quest</title>
+
+<style>
+/* ================= THEME VARIABLES ================= */
+:root {
+  --bg: #f6f6f6;
+  --card: #ffffff;
+  --text: #111111;
+  --accent: #7c6cff;
+}
+
+[data-theme="dark"] {
+  --bg: #0f0f14;
+  --card: #1c1c26;
+  --text: #f4f4f4;
+}
+
+/* ================= BASE ================= */
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.app {
+  width: 100%;
+  max-width: 420px;
+  padding: 20px;
+  text-align: center;
+}
+
+/* ================= HEADER ================= */
+.header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+button {
+  background: none;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: 20px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+/* ================= CARD FLIP ================= */
+.card-container {
+  perspective: 1000px;
+}
+
+.card-inner {
+  position: relative;
+  width: 100%;
+  min-height: 170px;
+  transform-style: preserve-3d;
+  transition: transform 0.7s cubic-bezier(0.4, 0.2, 0.2, 1);
+  cursor: pointer;
+}
+
+.card-inner.flipped {
+  transform: rotateY(180deg);
+}
+
+.card-face {
+  position: absolute;
+  inset: 0;
+  background: var(--card);
+  border-radius: 18px;
+  padding: 32px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backface-visibility: hidden;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.15);
+  font-size: 1.3rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.card-back {
+  transform: rotateY(180deg);
+  color: var(--accent);
+  font-size: 1.4rem;
+}
+
+/* ================= STREAK ================= */
+.streak {
+  margin-top: 18px;
+  font-size: 1.1rem;
+}
+
+.stars {
+  margin-top: 6px;
+  color: gold;
+  letter-spacing: 3px;
+}
+</style>
+</head>
+
+<body>
+<div class="app">
+
+  <div class="header">
+    <button id="themeBtn">🌗</button>
+    <button id="colorBtn">🎨</button>
+  </div>
+
+  <div class="card-container">
+    <div id="card" class="card-inner">
+      <div id="cardFront" class="card-face"></div>
+      <div class="card-face card-back">
+        Side-quest accepted ⭐
+      </div>
+    </div>
+  </div>
+
+  <div class="streak">
+    Streak
+    <div id="stars" class="stars"></div>
+  </div>
+
+</div>
+
+<script>
+/* ================= QUEST DECK ================= */
+const quests = [
+  "Take a 5-minute walk",
+  "Drink a full glass of water",
+  "Stretch your body for 3 minutes",
+  "Write one sentence about today",
+  "Compliment yourself",
+  "Tidy one small thing",
+  "Breathe deeply for 1 minute",
+  "Message someone you care about"
+];
+
+/* ================= SHUFFLE ================= */
+function shuffle(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+}
+
+/* ================= ELEMENTS ================= */
+const card = document.getElementById("card");
+const cardFront = document.getElementById("cardFront");
+const starsEl = document.getElementById("stars");
+const themeBtn = document.getElementById("themeBtn");
+const colorBtn = document.getElementById("colorBtn");
+
+/* ================= STATE ================= */
+let accepted = false;
+let streak = Number(localStorage.getItem("streak")) || 0;
+
+/* ================= LOAD QUEST ================= */
+shuffle(quests);
+cardFront.textContent = quests[0];
+
+/* ================= ACCEPT QUEST ================= */
+card.addEventListener("click", () => {
+  if (accepted) return;
+
+  accepted = true;
+  streak++;
+  localStorage.setItem("streak", streak);
+  card.classList.add("flipped");
+  renderStars();
+});
+
+/* ================= STARS ================= */
+function renderStars() {
+  starsEl.textContent = "★".repeat(streak);
+}
+renderStars();
+
+/* ================= THEME TOGGLE ================= */
+themeBtn.onclick = () => {
+  document.body.dataset.theme =
+    document.body.dataset.theme === "dark" ? "" : "dark";
+};
+
+/* ================= COLOR MODES ================= */
+const colors = ["#7c6cff", "#ff6c9f", "#4cd4b0", "#ffb703", "#6c9cff"];
+let colorIndex = 0;
+
+colorBtn.onclick = () => {
+  colorIndex = (colorIndex + 1) % colors.length;
+  document.documentElement.style.setProperty("--accent", colors[colorIndex]);
+};
+</script>
+</body>
+</html>
