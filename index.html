@@ -6,38 +6,57 @@
 <title>Daily Side Quest</title>
 
 <style>
-/* ================= THEME VARIABLES ================= */
 :root {
-  --bg: #f6f6f6;
-  --card: #ffffff;
-  --text: #111111;
+  --text: #111;
   --accent: #7c6cff;
 }
 
-[data-theme="dark"] {
-  --bg: #0f0f14;
-  --card: #1c1c26;
-  --text: #f4f4f4;
-}
-
-/* ================= BASE ================= */
+/* ================= GRADIENT BACKGROUND ================= */
 body {
   margin: 0;
   font-family: system-ui, -apple-system, BlinkMacSystemFont;
-  background: var(--bg);
   color: var(--text);
   height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
+  overflow: hidden;
+
+  background: linear-gradient(-45deg,
+    var(--accent),
+    #9f8cff,
+    #ff9fcf,
+    #4cd4b0);
+  background-size: 400% 400%;
+  animation: gradientShift 18s ease infinite;
 }
 
+[data-theme="dark"] {
+  --text: #f4f4f4;
+}
+
+@keyframes gradientShift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ================= APP ================= */
 .app {
   width: 100%;
   max-width: 420px;
   padding: 20px;
   text-align: center;
 }
+
+/* ================= INTRO ================= */
+.intro {
+  font-size: 2.2rem;
+  font-weight: 800;
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+.show { opacity: 1; }
 
 /* ================= HEADER ================= */
 .header {
@@ -47,12 +66,40 @@ body {
 }
 
 button {
-  background: none;
+  background: rgba(255,255,255,0.25);
   border: 1px solid var(--accent);
   color: var(--accent);
   border-radius: 20px;
   padding: 6px 12px;
   cursor: pointer;
+  backdrop-filter: blur(6px);
+}
+
+/* ================= SHUFFLE STACK ================= */
+.shuffle-area {
+  position: relative;
+  width: 220px;
+  height: 150px;
+  margin: 50px auto;
+}
+
+.fake-card {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 18px;
+  background: rgba(255,255,255,0.65);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.25);
+  animation: shuffleMove 0.6s infinite alternate;
+}
+
+.fake-card:nth-child(2) { animation-delay: 0.2s; }
+.fake-card:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes shuffleMove {
+  from { transform: translateX(-12px) rotate(-4deg); }
+  to { transform: translateX(12px) rotate(4deg); }
 }
 
 /* ================= CARD FLIP ================= */
@@ -63,9 +110,9 @@ button {
 .card-inner {
   position: relative;
   width: 100%;
-  min-height: 170px;
+  min-height: 200px;
   transform-style: preserve-3d;
-  transition: transform 0.7s cubic-bezier(0.4, 0.2, 0.2, 1);
+  transition: transform 0.8s cubic-bezier(0.4,0.2,0.2,1);
   cursor: pointer;
 }
 
@@ -76,35 +123,56 @@ button {
 .card-face {
   position: absolute;
   inset: 0;
-  background: var(--card);
-  border-radius: 18px;
+  border-radius: 20px;
   padding: 32px 24px;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   backface-visibility: hidden;
-  box-shadow: 0 12px 30px rgba(0,0,0,0.15);
-  font-size: 1.3rem;
+  font-size: 1.4rem;
   font-weight: 600;
   text-align: center;
+
+  background: rgba(255,255,255,0.75);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 15px 40px rgba(0,0,0,0.25);
+}
+
+[data-theme="dark"] .card-face {
+  background: rgba(28,28,38,0.75);
 }
 
 .card-back {
   transform: rotateY(180deg);
   color: var(--accent);
-  font-size: 1.4rem;
+  font-size: 1.5rem;
+}
+
+/* ================= PULSATING TEXT ================= */
+.accept-hint {
+  margin-top: 14px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  opacity: 0.7;
+  animation: pulse 1.6s infinite ease-in-out;
+}
+
+@keyframes pulse {
+  0% { opacity: 0.4; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+  100% { opacity: 0.4; transform: scale(1); }
 }
 
 /* ================= STREAK ================= */
 .streak {
-  margin-top: 18px;
-  font-size: 1.1rem;
+  margin-top: 20px;
 }
 
 .stars {
   margin-top: 6px;
   color: gold;
-  letter-spacing: 3px;
+  letter-spacing: 4px;
 }
 </style>
 </head>
@@ -112,41 +180,62 @@ button {
 <body>
 <div class="app">
 
-  <div class="header">
-    <button id="themeBtn">🌗</button>
-    <button id="colorBtn">🎨</button>
-  </div>
+  <div id="introText" class="intro"></div>
 
-  <div class="card-container">
-    <div id="card" class="card-inner">
-      <div id="cardFront" class="card-face"></div>
-      <div class="card-face card-back">
-        Side-quest accepted ⭐
+  <div id="mainContent" style="display:none;">
+
+    <div class="header">
+      <button id="themeBtn">🌗</button>
+      <button id="colorBtn">🎨</button>
+    </div>
+
+    <div id="shuffleArea" class="shuffle-area" style="display:none;">
+      <div class="fake-card"></div>
+      <div class="fake-card"></div>
+      <div class="fake-card"></div>
+    </div>
+
+    <div id="cardArea" class="card-container" style="display:none;">
+      <div id="card" class="card-inner">
+        <div id="cardFront" class="card-face"></div>
+        <div class="card-face card-back">
+          Side-quest accepted ⭐
+        </div>
       </div>
     </div>
-  </div>
 
-  <div class="streak">
-    Streak
-    <div id="stars" class="stars"></div>
-  </div>
+    <div class="streak">
+      Streak
+      <div id="stars" class="stars"></div>
+    </div>
 
+  </div>
 </div>
 
 <script>
-/* ================= QUEST DECK ================= */
+const intro = document.getElementById("introText");
+const main = document.getElementById("mainContent");
+const shuffleArea = document.getElementById("shuffleArea");
+const cardArea = document.getElementById("cardArea");
+const card = document.getElementById("card");
+const cardFront = document.getElementById("cardFront");
+const starsEl = document.getElementById("stars");
+
+const themeBtn = document.getElementById("themeBtn");
+const colorBtn = document.getElementById("colorBtn");
+
+/* QUESTS */
 const quests = [
   "Take a 5-minute walk",
   "Drink a full glass of water",
-  "Stretch your body for 3 minutes",
-  "Write one sentence about today",
+  "Stretch for 3 minutes",
+  "Write one positive sentence",
   "Compliment yourself",
   "Tidy one small thing",
-  "Breathe deeply for 1 minute",
-  "Message someone you care about"
+  "Message someone you care about",
+  "Plan tomorrow in 3 bullet points"
 ];
 
-/* ================= SHUFFLE ================= */
 function shuffle(array) {
   for (let i = array.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -154,25 +243,52 @@ function shuffle(array) {
   }
 }
 
-/* ================= ELEMENTS ================= */
-const card = document.getElementById("card");
-const cardFront = document.getElementById("cardFront");
-const starsEl = document.getElementById("stars");
-const themeBtn = document.getElementById("themeBtn");
-const colorBtn = document.getElementById("colorBtn");
-
-/* ================= STATE ================= */
 let accepted = false;
 let streak = Number(localStorage.getItem("streak")) || 0;
 
-/* ================= LOAD QUEST ================= */
-shuffle(quests);
-cardFront.textContent = quests[0];
+function renderStars() {
+  starsEl.textContent = "★".repeat(streak);
+}
+renderStars();
 
-/* ================= ACCEPT QUEST ================= */
+/* INTRO SEQUENCE */
+function showText(text, duration) {
+  return new Promise(resolve => {
+    intro.textContent = text;
+    intro.classList.add("show");
+    setTimeout(() => {
+      intro.classList.remove("show");
+      setTimeout(resolve, 1000);
+    }, duration);
+  });
+}
+
+async function startSequence() {
+  await showText("Are you ready?", 4000);
+  await showText("Your side-quest today is...", 5000);
+
+  intro.style.display = "none";
+  main.style.display = "block";
+
+  shuffleArea.style.display = "block";
+  await new Promise(r => setTimeout(r, 4000));
+  shuffleArea.style.display = "none";
+
+  shuffle(quests);
+
+  cardFront.innerHTML = `
+    <div>${quests[0]}</div>
+    <div class="accept-hint">click to accept</div>
+  `;
+
+  cardArea.style.display = "block";
+}
+
+startSequence();
+
+/* ACCEPT */
 card.addEventListener("click", () => {
   if (accepted) return;
-
   accepted = true;
   streak++;
   localStorage.setItem("streak", streak);
@@ -180,19 +296,13 @@ card.addEventListener("click", () => {
   renderStars();
 });
 
-/* ================= STARS ================= */
-function renderStars() {
-  starsEl.textContent = "★".repeat(streak);
-}
-renderStars();
-
-/* ================= THEME TOGGLE ================= */
+/* THEME */
 themeBtn.onclick = () => {
   document.body.dataset.theme =
     document.body.dataset.theme === "dark" ? "" : "dark";
 };
 
-/* ================= COLOR MODES ================= */
+/* COLOR */
 const colors = ["#7c6cff", "#ff6c9f", "#4cd4b0", "#ffb703", "#6c9cff"];
 let colorIndex = 0;
 
